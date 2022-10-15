@@ -17,6 +17,8 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('id_cliente')->nullable(0)->comment('referencia a cliente');
             $table->foreign('id_cliente')->references('id')->on('cliente');
+            $table->unsignedBigInteger('pe_prioridad')->comment('valo 0 es entregado');
+            $table->date('pe_fecha_entrega')->comment('fecha para entregar el pedido');
             $table->string('pe_tramite')->nullable(0)->comment('estado del pedido /en espera/despachado/');
             $table->unsignedInteger('pe_estado')->nullable(FALSE)->default(1)->comment('estado del pedido');
             $table->timestamps();
