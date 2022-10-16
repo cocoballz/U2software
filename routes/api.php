@@ -28,9 +28,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 Route::post('/list_pedidos', [StoreController::class, 'list_pedidos']);
+Route::post('/list_stock', [StoreController::class, 'list_productos']);
 Route::post('/detail_pedido', [StoreController::class, 'detail_pedido']);
 Route::post('/list_proveedores', [StoreController::class, 'list_proveedores']);
-Route::post('/list_stock', [StoreController::class, 'list_productos']);
 Route::post('/list_proveedores_producto', [StoreController::class, 'list_proveedores_producto']);
 
 //Route::post('/get_tipo_cuenta', [TransactionController::class, 'get_tipo_cuenta'])->middleware('auth:sanctum');
