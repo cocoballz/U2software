@@ -9,8 +9,7 @@ use App\Models\ProveedorModel;
 use App\Models\ProductoModel;
 use App\Models\ProveedorProductoModel;
 
-class StoreController extends Controller
-{
+class StoreController extends Controller {
 
     /**
      * list_pedidos : lista todos los pedidos siempre que esten en estado 1
@@ -22,8 +21,8 @@ class StoreController extends Controller
      */
     public function list_pedidos(){
         return response()->json(
-        ['status' => 1,
-        'datos' => PedidoModel::select('*')->where('pe_estado',1)->with('cliente')->get()
+            ['status' => 1,
+            'datos' => PedidoModel::select('*')->where('pe_estado',1)->with('cliente')->get()
         ]);
     }
 
@@ -37,16 +36,9 @@ class StoreController extends Controller
     public function detail_pedido()
     {
         $datos = Request()->validate(['No_pedido' => 'required|integer',]);
-
         $detalle = PedidoModel::select('*')->where('id',$datos['No_pedido'])->with('cliente')->get();
         $detalle['productos']= PedidoDetalleModel::select('*')->where('id_pedido',$datos['No_pedido'])->with('detalle')->get();
-        return response()->json(
-        [
-            'status' => 1,
-            'datos' => $detalle
-        ]);
-
-
+        return response()->json(['status' => 1,'datos' => $detalle]);
     }
 
 
@@ -58,8 +50,8 @@ class StoreController extends Controller
      */
     public function list_proveedores(){
         return response()->json(
-        ['status' => 1,
-        'datos' => ProveedorModel::select('*')->where('pv_estado',1)->get()
+            ['status' => 1,
+            'datos' => ProveedorModel::select('*')->where('pv_estado',1)->get()
         ]);
     }
 
@@ -72,10 +64,11 @@ class StoreController extends Controller
      */
     public function list_productos(){
         return response()->json(
-        ['status' => 1,
-        'datos' => ProductoModel::select('*')->where('p_estado',1)->get()
+            ['status' => 1,
+            'datos' => ProductoModel::select('*')->where('p_estado',1)->get()
         ]);
     }
+
 
     /**
      * list_proveedores_producto : permite mostrar que proveedores surten un producto en especifico (producto)
@@ -89,93 +82,72 @@ class StoreController extends Controller
         $detalle = ProveedorProductoModel::select('*')->where('id_producto',$datos['producto'])->with('proveedor','producto')->get();
         //$detalle['productos']= PedidoDetalleModel::select('*')->where('id_pedido',$datos['No_pedido'])->with('detalle')->get();
         return response()->json(
-        [
-            'status' => 1,
-            'datos' => $detalle
-        ]);
-
-
+            [
+                'status' => 1,
+                'datos' => $detalle
+            ]);
     }
 
-
-
-
-
-
-
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+  /**
+     * store_send : permite enviar o tramitar los pedidos)
+     * variables: [No_pedido]-> id tabla pedidos
+     * token: validado por middleware Auht:sanctum
+     * Dev: Sebastian Carvajal 15/10/2022
      */
-    public function index()
-    {
-        //
-    }
+  public function store_send()
+  {
+    $datos = Request()->validate(['No_pedido' => 'required|integer',]);
+    $detalle['productos']= PedidoDetalleModel::select('*')->where('id_pedido',$datos['No_pedido'])->with('detalle')->get();
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
+    if(count($detalle['productos']) != 0){
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        foreach($detalle['productos'] as $registro  ){
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
+            $var['id']=$registro->id_producto;
+            $var['cantidad']=$registro->p__d_cantidad;
+            $var['bodega']=$registro->detalle[0]->p_cantidad;
+            $var['nom_producto']=$registro->detalle[0]->p_nombre;
+            $total_inventario=$var['bodega'] -$var['cantidad'];
+            if($total_inventario >=0){
+                $estado=ProductoModel::where('id',  $var['id'])->update(['p_cantidad' => $total_inventario]);
+                $estado = true;
+            }
+            else{
+                return response()->json( [ 'status' => 0,'error' => "No se pudo completar la transferencia de :". $var['nom_producto'] ]);
+                die();
+            }
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
+        if($estado){
+            $estado=PedidoModel::where('id', $datos['No_pedido'])->update(['pe_tramite' => 'Enviado']);
+            return response()->json(
+                ['status' => 1,
+                'datos' => "Exito al guardar"
+            ]);
+        }
+        else{
+            return response()->json( [ 'status' => 0,'error' => "Cantidad de productos inconsistente. ¿Valida el stock?" ]);
+        }
     }
+    else{
+     return response()->json( [ 'status' => 0,'error' => "Pedido sin productos." ]);
+ }
+}
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+  /**
+     * store_add : permite cargar o actualizar nuevos productos)
+     * variables: [No_provedor_producto]-> id tabla proveedor productos , [valor]-> Cantidad e productos a comprar
+     * token: validado por middleware Auht:sanctum
+     * Dev: Sebastian Carvajal 15/10/2022
      */
-    public function destroy($id)
-    {
-        //
-    }
+  public function store_add()
+  {
+    $datos = Request()->validate(['No_provedor_producto' => 'required|integer','valor' => 'required|integer',]);
+    $producto=ProveedorProductoModel::select('*')->where('id',$datos['No_provedor_producto'])->with('producto')->get();
+    $total_inventario = $producto[0]->producto->p_cantidad + $datos['valor'];
+    $estado= ProductoModel::where('id',  $producto[0]->id_producto)->update(['p_cantidad' => $total_inventario]);
+    return response()->json( ['status' => 1, 'datos' => "Exito al comprar nuevos productos"]);
+}
+
 }

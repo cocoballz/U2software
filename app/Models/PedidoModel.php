@@ -11,7 +11,7 @@ class PedidoModel extends Model
     protected $table = 'pedido';
     protected $guarded = ['id','created_at','updated_at'];
 
- public function cliente()
+    public function cliente()
     {
         return $this->hasOne(ClienteModel::class, 'id','id_cliente');
     }

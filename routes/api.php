@@ -27,11 +27,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 | API view info  [Required login for Auth:sanctum]
 |--------------------------------------------------------------------------
 */
-Route::post('/list_pedidos', [StoreController::class, 'list_pedidos']);
-Route::post('/list_stock', [StoreController::class, 'list_productos']);
-Route::post('/detail_pedido', [StoreController::class, 'detail_pedido']);
-Route::post('/list_proveedores', [StoreController::class, 'list_proveedores']);
-Route::post('/list_proveedores_producto', [StoreController::class, 'list_proveedores_producto']);
+Route::post('/list_pedidos', [StoreController::class, 'list_pedidos'])->middleware('auth:sanctum');
+Route::post('/list_stock', [StoreController::class, 'list_productos'])->middleware('auth:sanctum');
+Route::post('/detail_pedido', [StoreController::class, 'detail_pedido'])->middleware('auth:sanctum');
+Route::post('/list_proveedores', [StoreController::class, 'list_proveedores'])->middleware('auth:sanctum');
+Route::post('/list_proveedores_producto', [StoreController::class, 'list_proveedores_producto'])->middleware('auth:sanctum');
+Route::post('/envio', [StoreController::class, 'store_send'])->middleware('auth:sanctum');
+Route::post('/restablecer', [StoreController::class, 'store_add'])->middleware('auth:sanctum');
 
-//Route::post('/get_tipo_cuenta', [TransactionController::class, 'get_tipo_cuenta'])->middleware('auth:sanctum');
 
